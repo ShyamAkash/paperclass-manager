@@ -35,8 +35,8 @@ if ($res->num_rows === 0) {
             p.total_marks,
             p.batch_year,
             m.marks         AS student_marks,
-            (SELECT AVG(m2.marks) FROM marks m2 WHERE m2.paper_id = p.id) AS mean_marks,
-            (SELECT STDDEV(m2.marks) FROM marks m2 WHERE m2.paper_id = p.id) AS stddev_marks,
+            (SELECT AVG(m2.marks)        FROM marks m2 WHERE m2.paper_id = p.id) AS mean_marks,
+            (SELECT STDDEV_SAMP(m2.marks) FROM marks m2 WHERE m2.paper_id = p.id) AS stddev_marks,
             (SELECT COUNT(*)+1 FROM marks m2 WHERE m2.paper_id = p.id AND m2.marks > m.marks) AS rank_val,
             (SELECT COUNT(*) FROM marks m2 WHERE m2.paper_id = p.id) AS total_students
         FROM marks m
@@ -52,8 +52,8 @@ if ($res->num_rows === 0) {
 
 // ── Helper: z-score ───────────────────────────────────────
 function calcZScore($marks, $mean, $stddev): string {
-    if ($stddev == 0 || $stddev === null) return 'N/A';
-    $z = ($marks - $mean) / $stddev;
+    if ($stddev === null || $stddev === '' || floatval($stddev) == 0) return 'N/A';
+    $z = (floatval($marks) - floatval($mean)) / floatval($stddev);
     return number_format($z, 3);
 }
 
