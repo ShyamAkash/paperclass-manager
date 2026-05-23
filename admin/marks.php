@@ -92,15 +92,15 @@ if ($selPaper) {
     $mean       = $n > 0 ? array_sum($markValues) / $n : 0;
     $variance   = 0;
     if ($n > 1) {
-        foreach ($markValues as $v) $variance += ($v - $mean) ** 2;
-        $variance /= $n;
+        foreach ($markValues as $v) $variance += (floatval($v) - $mean) ** 2;
+        $variance /= ($n - 1);          // sample variance (N-1), not population (N)
     }
-    $stddev = sqrt($variance);
+    $stddev = ($n > 1) ? sqrt($variance) : 0;
 }
 
 function renderZScore($marks, $mean, $stddev): string {
-    if ($stddev == 0) return '<span class="text-muted">N/A</span>';
-    $z = ($marks - $mean) / $stddev;
+    if ($stddev === null || floatval($stddev) == 0) return '<span class="text-muted">N/A</span>';
+    $z   = (floatval($marks) - floatval($mean)) / floatval($stddev);
     $cls = $z >= 0 ? 'text-green' : 'text-red';
     return "<span class='$cls fw-600'>" . number_format($z, 3) . "</span>";
 }
