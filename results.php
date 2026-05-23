@@ -26,21 +26,35 @@ if ($res->num_rows === 0) {
 
     // ── Fetch all marks for this student with paper details ───
     $sid = $student['id'];
+    // Per-paper stats pre-aggregated in a derived table (GROUP BY paper_id)
+    // so each paper gets its own mean/stddev regardless of MySQL version.
     $sql = "
         SELECT
-            p.id            AS paper_id,
+            p.id              AS paper_id,
             p.paper_number,
             p.paper_name,
             p.paper_date,
             p.total_marks,
             p.batch_year,
-            m.marks         AS student_marks,
-            (SELECT AVG(m2.marks)        FROM marks m2 WHERE m2.paper_id = p.id) AS mean_marks,
-            (SELECT STDDEV_SAMP(m2.marks) FROM marks m2 WHERE m2.paper_id = p.id) AS stddev_marks,
-            (SELECT COUNT(*)+1 FROM marks m2 WHERE m2.paper_id = p.id AND m2.marks > m.marks) AS rank_val,
-            (SELECT COUNT(*) FROM marks m2 WHERE m2.paper_id = p.id) AS total_students
+            m.marks           AS student_marks,
+            ps.mean_marks,
+            ps.stddev_marks,
+            ps.total_students,
+            (SELECT COUNT(*) + 1
+             FROM marks m2
+             WHERE m2.paper_id = m.paper_id
+               AND m2.marks > m.marks) AS rank_val
         FROM marks m
         INNER JOIN papers p ON p.id = m.paper_id
+        INNER JOIN (
+            SELECT
+                paper_id,
+                AVG(marks)         AS mean_marks,
+                STDDEV_SAMP(marks) AS stddev_marks,
+                COUNT(*)           AS total_students
+            FROM marks
+            GROUP BY paper_id
+        ) ps ON ps.paper_id = m.paper_id
         WHERE m.student_id = ?
         ORDER BY p.paper_date DESC, p.paper_number ASC
     ";
